@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block javascript %}
+
+    <script>
+        function loadPage() {
+            window.location += "game";
+        }
+    </script>
+
+{% endblock %}
+
+{% block body %}
+
+    <body>
+        <nav class="navbar navbar-light bg-light">
+            <div class="container-fluid">
+                <a class="navbar-brand"><img alt="" src="/static/settings.png" height="40" width="40"></a>
+                <a class="navbar-brand" href="/" id="speedle"><b>speedle</b></a>
+                <a class="navbar-brand"><img alt="" src="/static/leaderboard.png" height="40" width="40"></a>
+            </div>
+        </nav>
+
+        <div class="container d-grid mx-auto" id="play-button">
+            <button class="btn btn-outline-dark" onclick="loadPage()" type="submit">
+                <b>play</b>
+            </button>
+        </div>
+
+        <footer>
+            inspired by <a href="https://www.nytimes.com/games/wordle/index.html" target="_blank">Wordle</a>
+        </footer>
+    </body>
+
+{% endblock %}
