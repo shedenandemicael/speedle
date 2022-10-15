@@ -1,0 +1,177 @@
+{% extends "layout.html" %}
+
+{% block javascript %}
+
+<script>
+    const wordLength = 4;
+    const wordSet = ["bake", "best", "beam", "cute", "cool", "cold", "come", "exit", "four", "five", "from", "good", "game", "huge", "hide", "hope", "keep", "list", "lace", "mars", "need", "nine", "race", "rice", "ride", "stay", "tide", "tree", "word", "zero"];
+    let currentWord = "";
+    let lettersCorrect = 0;
+
+    function determineWord() {
+        let randomIndex = Math.floor(Math.random() * wordSet.length);
+        currentWord = wordSet[randomIndex];
+    }
+
+
+    let lettersTyped = 0;
+    // array of word as HTML elements
+    let letterBlocks = new Array(5);
+    function typingLetters(event) {
+        // checks if key pressed is an alpha character
+        if (event.key.length == 1 && /^[a-zA-z]/.test(event.key)) {
+            letterBlocks[lettersTyped] = "<td class='letters'>" + event.key.toUpperCase() + "</td>";
+            textBox = document.getElementById("word");
+            if (lettersTyped < wordLength) {
+                lettersTyped += 1;
+                // inserts the HTML of the letters typed
+                textBox.innerHTML = letterBlocks[0];
+                for (let i = 1; i < lettersTyped; i++) {
+                    textBox.innerHTML += letterBlocks[i];
+                }
+                // inserts the empty blocks
+                for (let i = 0; i < wordLength - lettersTyped; i++) {
+                    textBox.innerHTML += "<td class='letters'></td>";
+                }
+            }
+        }
+        // if backspace key is pressed, removes one letter
+        else if (event.key == 'Backspace' && lettersTyped > 0) {
+            lettersTyped -= 1;
+            textBox.innerHTML = letterBlocks[0];
+            if (lettersTyped == 0) {
+                textBox.innerHTML = '';
+            }
+            // inserts the HTML of the letters typed
+            for (let i = 1; i < lettersTyped; i++) {
+                textBox.innerHTML += letterBlocks[i];
+            }
+            // inserts the empty blocks
+            for (let i = 0; i < wordLength - lettersTyped; i++) {
+                textBox.innerHTML += "<td class='letters'></td>";
+            }
+        }
+    }
+
+    function newRow(event) {
+        if (lettersTyped == wordLength && event.key == 'Enter') {
+            let row = document.getElementById("words").insertRow();
+            checkAnswer();
+            // removes id from old word and adds id to active word
+            document.getElementById("word").removeAttribute('id');
+            row.id = 'word';
+            for (let i = 0; i < wordLength; i++) {
+                let emptyLetter = row.insertCell(i);
+                emptyLetter.className = 'letters';
+            }
+            // resets lettersTyped so typingLetters function works properly
+            lettersTyped = 0;
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+    }
+
+
+    function checkAnswer() {
+        let letters = document.getElementById("word").children;
+        // .children method returns nodeList which thus needs to be an array
+        let greenLetters = 0;
+        letters = Array.from(letters);
+        for (let i = 0; i < wordLength; i++) {
+            let letter = letters[i].innerHTML.toLowerCase();
+            if (letter == currentWord[i]) {
+                // green if letters match
+                letters[i].style.backgroundColor = "#65a765";
+                greenLetters++;
+            }
+            else if (currentWord.search(letter) != -1) {
+                // yellow if letter is in word but in the wrong place
+                letters[i].style.backgroundColor = "#fdfd96";
+            }
+            else {
+                // red if the letter is not in the word
+                letters[i].style.backgroundColor = "#ff6865";
+            }
+        }
+        lettersCorrect = greenLetters;
+    }
+
+    const startTime = Date.now();
+    function timer() {
+        function time() {
+            let currentMilliseconds = (Date.now() - startTime).toString();
+            let currentSeconds = Math.floor((Date.now() - startTime) / 1000).toString();
+            let currentTime = currentSeconds
+                + "." + currentMilliseconds.substring(currentMilliseconds.length - 3);
+            document.getElementById("time").innerText = currentTime;
+            if (lettersCorrect == wordLength) {
+                gameEnd(currentTime);
+                $('#myModal').modal('show');
+                clearInterval(baseCase);
+            }
+        }
+        let baseCase = setInterval(time);
+    }
+
+    function gameEnd(timeScore) {
+        // sends score data to server
+        $.post("/game", {score: timeScore});
+        $("#score").text(timeScore);
+    }
+</script>
+
+{% endblock %}
+
+
+{% block body %}
+
+    <body onkeydown="typingLetters(event); newRow(event);" onload="determineWord(); timer()">
+        <nav class="navbar navbar-light bg-light">
+            <div class="container-fluid">
+                <a class="navbar-brand"><img alt="" src="/static/settings.png" height="40" width="40"></a>
+                <a class="navbar-brand" href="/" id="speedle"><b>speedle</b></a>
+                <a class="navbar-brand"><img alt="" src="/static/leaderboard.png" height="40" width="40"></a>
+            </div>
+        </nav>
+
+        <div id="game">
+
+            <div>
+                <table id="words">
+                    <tbody id="lines">
+                        <tr id="word">
+                            <td class="letters" id="letter1"></td>
+                            <td class="letters" id="letter2"></td>
+                            <td class="letters" id="letter3"></td>
+                            <td class="letters" id="letter4"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="timer">
+                <b>Timer: </b>
+                <div id="time"></div>
+            </div>
+        </div>
+
+        <div class="modal" id="myModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Good Job!</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>It took you <span id="score"></span> seconds to guess the right word. On average, it takes you {{ averageScore }} seconds to guess the word.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <form action="/game" method="GET">
+                            <input class="btn btn-outline-dark" type="submit" value="New Game">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+
+{% endblock %}
