@@ -1,0 +1,6 @@
+cs50
+Flask
+Flask-Session
+requests
+jquery 3.6.0
+bootstrap
